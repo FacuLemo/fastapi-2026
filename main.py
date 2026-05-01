@@ -1,6 +1,23 @@
-from fastapi import Body, FastAPI, Path, Query
+from typing import Annotated
+
+from fastapi import FastAPI, HTTPException, Path, Query
+from pydantic import BaseModel
 
 app = FastAPI()
+
+
+class Articulo(BaseModel):
+    id: int
+    nombre: str
+    precio: float
+    activo: bool
+
+
+class ArticuloUpdate(BaseModel):
+    nombre: str
+    precio: float
+    activo: bool
+
 
 app.title = "Mi primera API"  # Así cambia el nombre en /docs
 
@@ -15,22 +32,25 @@ articulos = [
 
 
 @app.get("/articulos")
-async def get_articulos():
+async def get_articulos() -> list[Articulo]:
     # filtrar no activos
     return articulos
 
 
 @app.get("/articulos/{id}")  # Parámetro de ruta (esta en la url)
 async def get_articulos_by_id(
-    id: int = Path(
-        gt=0,
-        description="Id a buscar entre articulos. >0",
-    )
-):
+    id: Annotated[
+        int,
+        Path(
+            gt=0,
+            description="Id a buscar entre articulos. >0",
+        ),
+    ],
+) -> Articulo:
     for articulo in articulos:
         if articulo["id"] == id:
             return articulo
-    return {"detail": "Not found"}
+    raise HTTPException(status_code=404, detail="Articulo no encontrado")
 
 
 # Parámetro query-> /articulos?clave=valor&llave=valor
@@ -49,47 +69,41 @@ async def get_articulos_by_id(
 
 @app.post("/articulos")  # Body
 async def crear_articulo(
-    id: int = Body(gt=0),
-    nombre: str = Body(min_length=3, max_length=60),
-    precio: float = Body(ge=1000, lt=99999999),
-):
-    nuevo_articulo = {
-        "id": id,
-        "nombre": nombre,
-        "precio": precio,
-    }
+    articulo: Articulo,  # <- Clase BaseModel de pydantic, viene en el body
+) -> Articulo:
+    nuevo_articulo = (
+        articulo.model_dump()
+    )  # model dump convierte los datos del obj en dict
     articulos.append(nuevo_articulo)
     return nuevo_articulo
 
 
-@app.delete("/articulos/{id}") #?logico=false
+@app.delete("/articulos/{id}")  # ?logico=false
 async def borrar_articulo(
-    id: int,
-    logico: bool = Query(description="Mantener registro?", default=False)
-):
+    id: int, logico: bool = Query(description="Mantener registro?", default=False)
+) -> Articulo:
     for articulo in articulos:
         if articulo["id"] == id:
             if logico:
-                articulo["activo"]=False,
+                articulo["activo"] = (False,)
             else:
                 articulos.remove(articulo)
-            return {"detail": "Borrado correctamente"}
-    return {"detail": "no encontrado"}
+            return articulo
+    raise HTTPException(status_code=404, detail="Articulo no encontrado")
 
 
 @app.put("/articulos/{id}")
 async def editar_articulo(
-    id: int = Path(gt=0, description="Id del producto. >0"),
-    nombre: str = Body(max_length=50),
-    precio: float = Body(ge=1000),
-):
-    for articulo in articulos:
-        if articulo["id"] == id:
-            articulo["nombre"] = nombre
-            articulo["precio"] = precio
-            return articulo
-
-    return {"detail": "Not Found"}
+    id: Annotated[int, Path(gt=0, description="Id del producto. >0")],
+    articulo: ArticuloUpdate,
+) -> Articulo:
+    for a in articulos:
+        if a["id"] == id:
+            a["nombre"] = articulo.nombre
+            a["precio"] = articulo.precio
+            a["activo"] = articulo.activo
+            return a
+    raise HTTPException(status_code=404, detail="Articulo no encontrado")
 
 
 """
