@@ -1,27 +1,28 @@
 from typing import Annotated
-
-from fastapi import FastAPI, HTTPException, Path, Query
-from pydantic import BaseModel
+from fastapi import FastAPI, Path, Query, HTTPException
+from pydantic import BaseModel, Field
 
 app = FastAPI()
-
-
-class Articulo(BaseModel):
-    id: int
-    nombre: str
-    precio: float
-    activo: bool
-
-
-class ArticuloUpdate(BaseModel):
-    nombre: str
-    precio: float
-    activo: bool
-
 
 app.title = "Mi primera API"  # Así cambia el nombre en /docs
 
 # METODOS: 2 GET, POST PUT DELETE
+
+STR_CORTITO = Annotated[str, Field(max_length=30)]
+PRECIO_PVP = Annotated[float, Field(lt=999999)]
+BOOL_ACTIVO = Annotated[bool, Field(description="Disponible?")]
+
+
+class ArticuloSchema(BaseModel):
+    id: Annotated[int, Field(gt=0, description="ID del articulo", deprecated=True)] 
+    nombre: STR_CORTITO
+    precio: PRECIO_PVP = 1500
+    activo: BOOL_ACTIVO = True
+
+class ArticuloUpdateSchema(BaseModel):
+    nombre: STR_CORTITO
+    precio: PRECIO_PVP = 2000
+    activo: BOOL_ACTIVO = True
 
 # Simulación db supermercado:
 articulos = [
@@ -32,26 +33,18 @@ articulos = [
 
 
 @app.get("/articulos")
-async def get_articulos() -> list[Articulo]:
-    # filtrar no activos
+async def get_articulos() -> list[ArticuloSchema]:
     return articulos
 
 
 @app.get("/articulos/{id}")  # Parámetro de ruta (esta en la url)
 async def get_articulos_by_id(
-    id: Annotated[
-        int,
-        Path(
-            gt=0,
-            description="Id a buscar entre articulos. >0",
-        ),
-    ],
-) -> Articulo:
+    id: Annotated[int, Path(gt=0)],
+) -> ArticuloSchema:
     for articulo in articulos:
         if articulo["id"] == id:
             return articulo
     raise HTTPException(status_code=404, detail="Articulo no encontrado")
-
 
 # Parámetro query-> /articulos?clave=valor&llave=valor
 
@@ -61,27 +54,26 @@ async def get_articulos_by_id(
 # ge greater or equal : >= que
 # lt less than : menor que
 # le less or equal : <= que
+# max_digits / min_digits
 
 # para str
 # min_length
 # max_length
 
 
-@app.post("/articulos")  # Body
+@app.post("/articulos")  
 async def crear_articulo(
-    articulo: Articulo,  # <- Clase BaseModel de pydantic, viene en el body
-) -> Articulo:
-    nuevo_articulo = (
-        articulo.model_dump()
-    )  # model dump convierte los datos del obj en dict
-    articulos.append(nuevo_articulo)
-    return nuevo_articulo
+    articulo_nuevo: ArticuloSchema
+) -> list[ArticuloSchema]:
+    articulos.append(articulo_nuevo.model_dump())
+    return articulos
 
 
 @app.delete("/articulos/{id}")  # ?logico=false
 async def borrar_articulo(
-    id: int, logico: bool = Query(description="Mantener registro?", default=False)
-) -> Articulo:
+    id: Annotated[int, Path(gt=0)],
+    logico: Annotated[bool, Query(description="Mantener registro?")] = False,
+) -> ArticuloSchema:
     for articulo in articulos:
         if articulo["id"] == id:
             if logico:
@@ -95,14 +87,14 @@ async def borrar_articulo(
 @app.put("/articulos/{id}")
 async def editar_articulo(
     id: Annotated[int, Path(gt=0, description="Id del producto. >0")],
-    articulo: ArticuloUpdate,
-) -> Articulo:
-    for a in articulos:
-        if a["id"] == id:
-            a["nombre"] = articulo.nombre
-            a["precio"] = articulo.precio
-            a["activo"] = articulo.activo
-            return a
+    articulo_editar: ArticuloUpdateSchema
+) -> ArticuloSchema:
+    for articulo in articulos:
+        if articulo["id"] == id:
+            articulo["nombre"] = articulo_editar.nombre
+            articulo["precio"] = articulo_editar.precio
+            articulo["activo"] = articulo_editar.activo
+            return articulo
     raise HTTPException(status_code=404, detail="Articulo no encontrado")
 
 
