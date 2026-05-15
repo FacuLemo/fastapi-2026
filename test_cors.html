@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Frontend + FastAPI</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 350px;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #resultado {
+      margin-top: 20px;
+      padding: 12px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      word-break: break-word;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Consumir API FastAPI</h2>
+
+    <button onclick="llamarAPI()">
+      Llamar API
+    </button>
+
+    <div id="resultado">
+      Esperando respuesta...
+    </div>
+  </div>
+
+  <script>
+    async function llamarAPI() {
+      const resultado = document.getElementById("resultado");
+
+      resultado.innerText = "Cargando...";
+
+      try {
+        const response = await fetch("http://localhost:8000/articulos", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Error en la respuesta del servidor");
+        }
+
+        const data = await response.json();
+
+        resultado.innerText = JSON.stringify(data, null, 2);
+
+      } catch (error) {
+        resultado.innerText = "Error: " + error.message;
+      }
+    }
+  </script>
+
+</body>
+</html>
