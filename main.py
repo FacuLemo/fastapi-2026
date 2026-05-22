@@ -26,7 +26,8 @@ app.add_middleware(
 # METODOS: 2 GET, POST PUT DELETE
 # DRY : DON'T REPEAT YOURSELF
 
-not_found = {
+# Constante, mayúsculas con snake_case
+NOT_FOUND_RESPONSE = {
     404: {
         "description": "Response not found si no se encuentra el id",
         "content": {
@@ -40,22 +41,25 @@ not_found = {
 }
 
 
-STR_CORTITO = Annotated[str, Field(max_length=30)]
-PRECIO_PVP = Annotated[float, Field(lt=999999)]
-BOOL_ACTIVO = Annotated[bool, Field(description="Disponible?")]
+# Modularizar los tipos personalizados (Type Aliases)
+# La nomenclatura recomendada es PascalCase, entonces quedaría:
+IntPositivo = Annotated[int, Field(gt=0)]
+StrCortito = Annotated[str, Field(max_length=30)]
+IntPrecioVenta = Annotated[int, Field(gt=500, lt=999999)]
+BoolActivo = Annotated[bool, Field(description="Sigue disponible?")]
 
 
 class ArticuloSchema(BaseModel):
     id: Annotated[int, Field(gt=0, description="ID del articulo", deprecated=True)]
-    nombre: STR_CORTITO
-    precio: PRECIO_PVP = 1500
-    activo: BOOL_ACTIVO = True
+    nombre: StrCortito
+    precio: IntPrecioVenta = 1500
+    activo: BoolActivo = True
 
 
 class ArticuloUpdateSchema(BaseModel):
-    nombre: STR_CORTITO
-    precio: PRECIO_PVP = 2000
-    activo: BOOL_ACTIVO = True
+    nombre: StrCortito
+    precio: IntPrecioVenta = 2000
+    activo: BoolActivo = True
 
 
 # Simulación db supermercado:
@@ -68,16 +72,19 @@ articulos = [
 
 @app.get("/articulos", response_model=list[ArticuloSchema])
 async def get_articulos():
+    # Aquí mostrar únicamente articulos que activo=True
+    # ^^relevante si el borrado del delete es lógico
     return articulos
 
 
 @app.get(
     "/articulos/{id}",  # Parámetro de ruta (esta en la url)
-    responses=not_found,
+    responses=NOT_FOUND_RESPONSE,
     response_model=ArticuloSchema,
 )
 async def get_articulos_by_id(
     id: Annotated[int, Path(gt=0)],
+    # ^^El tipo de este parámetro podría ser modularizado, ¿no?
 ):
     for articulo in articulos:
         if articulo["id"] == id:
@@ -93,12 +100,13 @@ async def crear_articulo(articulo_nuevo: ArticuloSchema):
 
 @app.delete(
     "/articulos/{id}",  # ?logico=false
-    responses=not_found,
+    responses=NOT_FOUND_RESPONSE,
     response_model=ArticuloSchema,
 )
 async def borrar_articulo(
     id: Annotated[int, Path(gt=0)],
     logico: Annotated[bool, Query(description="Mantener registro?")] = False,
+    # ^^ los tipos de estos parámetros pueden ser modularizados, ¿no?
 ) -> ArticuloSchema:
     for articulo in articulos:
         if articulo["id"] == id:
@@ -110,9 +118,10 @@ async def borrar_articulo(
     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
-@app.put("/articulos/{id}", responses=not_found, response_model=ArticuloSchema)
+@app.put("/articulos/{id}", responses=NOT_FOUND_RESPONSE, response_model=ArticuloSchema)
 async def editar_articulo(
     id: Annotated[int, Path(gt=0, description="Id del producto. >0")],
+    # ^^ El tipo puede ser modularizado, no?
     articulo_editar: ArticuloUpdateSchema,
 ):
     for articulo in articulos:
