@@ -1,31 +1,10 @@
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Path, Query
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, Path, Query
 
-app = FastAPI()
+from schemas.articulos import ArticuloSchema, ArticuloUpdateSchema
 
-app.title = "Mi primera API"  # Así cambia el nombre en /docs
-
-# Request -> Middleware -> Path Operation -> Middleware -> Response
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",  # entorno desarrollo
-        "https://faculemo.github.io/front",  # entorno producción
-        # "*", wildcard ! Cualquier origen
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# METODOS: 2 GET, POST PUT DELETE
-# DRY : DON'T REPEAT YOURSELF
-
+articulos_routers = APIRouter()
 # Constante, mayúsculas con snake_case
 NOT_FOUND_RESPONSE = {
     404: {
@@ -40,28 +19,6 @@ NOT_FOUND_RESPONSE = {
     },
 }
 
-
-# Modularizar los tipos personalizados (Type Aliases)
-# La nomenclatura recomendada es PascalCase, entonces quedaría:
-IntPositivo = Annotated[int, Field(gt=0)]
-StrCortito = Annotated[str, Field(max_length=30)]
-IntPrecioVenta = Annotated[int, Field(gt=500, lt=999999)]
-BoolActivo = Annotated[bool, Field(description="Sigue disponible?")]
-
-
-class ArticuloSchema(BaseModel):
-    id: Annotated[int, Field(gt=0, description="ID del articulo", deprecated=True)]
-    nombre: StrCortito
-    precio: IntPrecioVenta = 1500
-    activo: BoolActivo = True
-
-
-class ArticuloUpdateSchema(BaseModel):
-    nombre: StrCortito
-    precio: IntPrecioVenta = 2000
-    activo: BoolActivo = True
-
-
 # Simulación db supermercado:
 articulos = [
     {"id": 1, "nombre": "Paquete de Arroz", "precio": 2000, "activo": True},
@@ -70,15 +27,15 @@ articulos = [
 ]
 
 
-@app.get("/articulos", response_model=list[ArticuloSchema])
+@articulos_routers.get("/", response_model=list[ArticuloSchema])
 async def get_articulos():
     # Aquí mostrar únicamente articulos que activo=True
     # ^^relevante si el borrado del delete es lógico
     return articulos
 
 
-@app.get(
-    "/articulos/{id}",  # Parámetro de ruta (esta en la url)
+@articulos_routers.get(
+    "/{id}",  # Parámetro de ruta (esta en la url)
     responses=NOT_FOUND_RESPONSE,
     response_model=ArticuloSchema,
 )
@@ -92,14 +49,14 @@ async def get_articulos_by_id(
     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
-@app.post("/articulos", response_model=list[ArticuloSchema])
+@articulos_routers.post("/", response_model=list[ArticuloSchema])
 async def crear_articulo(articulo_nuevo: ArticuloSchema):
     articulos.append(articulo_nuevo.model_dump())
     return articulos
 
 
-@app.delete(
-    "/articulos/{id}",  # ?logico=false
+@articulos_routers.delete(
+    "/{id}",  # ?logico=false
     responses=NOT_FOUND_RESPONSE,
     response_model=ArticuloSchema,
 )
@@ -118,7 +75,9 @@ async def borrar_articulo(
     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
-@app.put("/articulos/{id}", responses=NOT_FOUND_RESPONSE, response_model=ArticuloSchema)
+@articulos_routers.put(
+    "/{id}", responses=NOT_FOUND_RESPONSE, response_model=ArticuloSchema
+)
 async def editar_articulo(
     id: Annotated[int, Path(gt=0, description="Id del producto. >0")],
     # ^^ El tipo puede ser modularizado, no?
@@ -131,41 +90,3 @@ async def editar_articulo(
             articulo["activo"] = articulo_editar.activo
             return articulo
     raise HTTPException(status_code=404, detail="Articulo no encontrado")
-
-
-"""
-
-# Parámetro query-> /articulos?clave=valor&llave=valor
-
-
-# validacion para int
-# gt greater than : mayor que
-# ge greater or equal : >= que
-# lt less than : menor que
-# le less or equal : <= que
-# max_digits / min_digits
-
-# para str
-# min_length
-# max_length
-
-
-@app.get("/saludo")  # "/Saludo" es el endpoint de la url
-async def saludo():
-    return {"hola": "mundo"}
-
-
-@app.put("/saludo/put")
-async def put():
-    return {"hola": "put"}
-
-
-@app.post("/saludo/post")
-async def post():
-    return {"hola": "post"}
-
-
-@app.delete("/saludo/delete")
-async def delete():
-    return {"hola": "delete"}
-"""
