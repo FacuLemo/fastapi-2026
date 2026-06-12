@@ -11,7 +11,7 @@ BoolActivo = Annotated[bool, Field(description="Sigue disponible?")]
 
 
 class ArticuloSchema(BaseModel):
-    id: Annotated[int, Field(gt=0, description="ID del articulo", deprecated=True)]
+    id: Annotated[int, Field(gt=0, description="ID del articulo")]
     nombre: StrCortito
     precio: IntPrecioVenta = 1500
     activo: BoolActivo = True

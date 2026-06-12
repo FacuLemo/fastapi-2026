@@ -10,7 +10,7 @@ app.title = "Mi primera API"  # Así cambia el nombre en /docs
 #Inclumos los routers (path operations)
 
 app.include_router(articulos_routers, tags=["Artículos"], prefix="/articulos")
-app.include_router(saludar_routers, tags=["Saludos"], prefix="/saludos")
+app.include_router(saludar_routers, tags=["Saludos"])
 
 #^ Tags agrupa en la documentación
 #^ Prefix le pone prefijos a las urls de cada path operation definido en ese router

@@ -11,7 +11,7 @@ pip install -r requirements.txt
 ```
 Iniciamos FastAPI
 ```
-fastapi dev
+fastapi dev src/main.py
 ```
 ## Otros comandos útiles
 para instalar la última versión de FastAPI
