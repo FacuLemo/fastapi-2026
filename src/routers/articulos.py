@@ -2,9 +2,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, Query
 
+from database import articulos
 from schemas.articulos import ArticuloSchema, ArticuloUpdateSchema
 
 articulos_routers = APIRouter()
+
 # Constante, mayúsculas con snake_case
 NOT_FOUND_RESPONSE = {
     404: {
@@ -19,21 +21,14 @@ NOT_FOUND_RESPONSE = {
     },
 }
 
-# Simulación db supermercado:
-articulos = [
-    {"id": 1, "nombre": "Paquete de Arroz", "precio": 2000, "activo": True},
-    {"id": 2, "nombre": "Fideos", "precio": 3000, "activo": True},
-    {"id": 3, "nombre": "Atún Desmenuzado", "precio": 550, "activo": True},
-]
-
-
+#get all articulos
 @articulos_routers.get("/", response_model=list[ArticuloSchema])
 async def get_articulos():
     # Aquí mostrar únicamente articulos que activo=True
     # ^^relevante si el borrado del delete es lógico
     return articulos
 
-
+#get by id
 @articulos_routers.get(
     "/{id}",  # Parámetro de ruta (esta en la url)
     responses=NOT_FOUND_RESPONSE,
@@ -41,7 +36,6 @@ async def get_articulos():
 )
 async def get_articulos_by_id(
     id: Annotated[int, Path(gt=0)],
-    # ^^El tipo de este parámetro podría ser modularizado, ¿no?
 ):
     for articulo in articulos:
         if articulo["id"] == id:
@@ -49,16 +43,16 @@ async def get_articulos_by_id(
     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
-@articulos_routers.post("/", response_model=list[ArticuloSchema])
-async def crear_articulo(articulo_nuevo: ArticuloSchema):
+@articulos_routers.post("/", response_model=list[ArticuloSchema]) #VALIDO EL DATO DE SALIDA
+async def crear_articulo(articulo_nuevo: ArticuloSchema): #VALIDO EL DATO DE ENTRADA
     articulos.append(articulo_nuevo.model_dump())
     return articulos
 
 
 @articulos_routers.delete(
     "/{id}",  # ?logico=false
-    responses=NOT_FOUND_RESPONSE,
-    response_model=ArticuloSchema,
+    responses=NOT_FOUND_RESPONSE, #DOCUMENTACION
+    response_model=ArticuloSchema, #VALIDACION DATOS DE SALIDA
 )
 async def borrar_articulo(
     id: Annotated[int, Path(gt=0)],
