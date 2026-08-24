@@ -2,11 +2,16 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, Query
 
-from database import articulos
 from schemas.articulos import ArticuloSchema, ArticuloUpdateSchema
 
 articulos_routers = APIRouter()
 
+
+articulos = [
+    {"id": 1, "nombre": "Paquete de Arroz", "precio": 2000, "activo": True},
+    {"id": 2, "nombre": "Fideos", "precio": 3000, "activo": True},
+    {"id": 3, "nombre": "Atún Desmenuzado", "precio": 550, "activo": True},
+]
 # Constante, mayúsculas con snake_case
 NOT_FOUND_RESPONSE = {
     404: {
@@ -26,6 +31,8 @@ NOT_FOUND_RESPONSE = {
 async def get_articulos():
     # Aquí mostrar únicamente articulos que activo=True
     # ^^relevante si el borrado del delete es lógico
+    
+    # pronto: articulos = db.query(Articulos).all()
     return articulos
 
 #get by id

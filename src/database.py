@@ -1,7 +1,28 @@
-articulos = [
-    {"id": 1, "nombre": "Paquete de Arroz", "precio": 2000, "activo": True},
-    {"id": 2, "nombre": "Fideos", "precio": 3000, "activo": True},
-    {"id": 3, "nombre": "Atún Desmenuzado", "precio": 550, "activo": True},
-]
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+#Database.py
+#Gestión de la conexión a la DB -> Usando SQLAlchemy
+
+url = "sqlite:///./base_de_datos.db" #Sqlite: DB LOCAL (no en un servidor/nube)
+
+#Fastapi es asíncrono, entonces le hace falta args especiales (check_same_thread)
+#Motor de conexión -> Prepara internamente la DB
+engine = create_engine(url, connect_args={"check_same_thread":False})
+
+#Nos permite la conexión a través del motor -> Permite el ida y vuelta
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+#Base -> MODELOS -> Clase que representa TABLA
+Base = declarative_base()
+
+#Dependencia a inyectar en los Path Operations
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db #return que NO termina la función
+    finally:
+        db.close()
 
 

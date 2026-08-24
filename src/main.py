@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from models.articulos import Articulo #IMPORTANTE para que se cree la tabla, aunque no se use en código
+from database import Base, engine
 from routers.articulos import articulos_routers
 from routers.saludar import saludar_routers
+
+# Crea las tablas y la db
+Base.metadata.create_all(bind=engine)
 
 # Fastapi -> Framework para hacer APIs
 # Framework -> marco de trabajo -> herramientas y formas de trabajar para cumplir un próposito
