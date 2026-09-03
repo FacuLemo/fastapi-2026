@@ -21,8 +21,7 @@ Base = declarative_base()
 def get_db():
     db = SessionLocal()
     try:
-        yield db #return que NO termina la función
+        yield db # Return que no termina la función
     finally:
         db.close()
-
 

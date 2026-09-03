@@ -1,17 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, HTTPException, Path, Query, Depends
+from sqlalchemy.orm import Session
+from database import get_db
 
+from models.articulos import Articulo
 from schemas.articulos import ArticuloSchema, ArticuloUpdateSchema
 
 articulos_routers = APIRouter()
 
 
-articulos = [
-    {"id": 1, "nombre": "Paquete de Arroz", "precio": 2000, "activo": True},
-    {"id": 2, "nombre": "Fideos", "precio": 3000, "activo": True},
-    {"id": 3, "nombre": "Atún Desmenuzado", "precio": 550, "activo": True},
-]
 # Constante, mayúsculas con snake_case
 NOT_FOUND_RESPONSE = {
     404: {
@@ -26,16 +24,15 @@ NOT_FOUND_RESPONSE = {
     },
 }
 
-#get all articulos
+
+# get all articulos
 @articulos_routers.get("/", response_model=list[ArticuloSchema])
-async def get_articulos():
-    # Aquí mostrar únicamente articulos que activo=True
-    # ^^relevante si el borrado del delete es lógico
-    
-    # pronto: articulos = db.query(Articulos).all()
+async def get_articulos(db: Session = Depends(get_db)):  # Inyección de Dependencias
+    articulos = db.query(Articulo).all()
     return articulos
 
-#get by id
+
+# get by id
 @articulos_routers.get(
     "/{id}",  # Parámetro de ruta (esta en la url)
     responses=NOT_FOUND_RESPONSE,
@@ -43,37 +40,54 @@ async def get_articulos():
 )
 async def get_articulos_by_id(
     id: Annotated[int, Path(gt=0)],
+    db: Session = Depends(get_db)
 ):
-    for articulo in articulos:
-        if articulo["id"] == id:
-            return articulo
+
+    #arti_obtenido = db.query(Articulo).filter(Articulo.id == id).first()
+    #SELECT * FROM articulos WHERE arti_id = 6
+
+    arti_obtenido = db.get(Articulo, id)
+    if arti_obtenido is not None:
+        return arti_obtenido
     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
-@articulos_routers.post("/", response_model=list[ArticuloSchema]) #VALIDO EL DATO DE SALIDA
-async def crear_articulo(articulo_nuevo: ArticuloSchema): #VALIDO EL DATO DE ENTRADA
-    articulos.append(articulo_nuevo.model_dump())
-    return articulos
+@articulos_routers.post(
+    "/", response_model=ArticuloSchema
+)  # VALIDO EL DATO DE SALIDA
+async def crear_articulo(articulo_nuevo: ArticuloSchema, db: Session = Depends(get_db) ):  # VALIDO EL DATO DE ENTRADA
+
+    articulo_db = Articulo( # <- MODELO
+        nombre= articulo_nuevo.nombre,
+        precio = articulo_nuevo.precio,
+        activo = articulo_nuevo.activo,
+    )
+    db.add(articulo_db)
+    db.commit()
+    db.refresh(articulo_db)
+
+    #persistir en la db
+    return articulo_db
 
 
-@articulos_routers.delete(
-    "/{id}",  # ?logico=false
-    responses=NOT_FOUND_RESPONSE, #DOCUMENTACION
-    response_model=ArticuloSchema, #VALIDACION DATOS DE SALIDA
-)
-async def borrar_articulo(
-    id: Annotated[int, Path(gt=0)],
-    logico: Annotated[bool, Query(description="Mantener registro?")] = False,
-    # ^^ los tipos de estos parámetros pueden ser modularizados, ¿no?
-) -> ArticuloSchema:
-    for articulo in articulos:
-        if articulo["id"] == id:
-            if logico:
-                articulo["activo"] = (False,)
-            else:
-                articulos.remove(articulo)
-            return articulo
-    raise HTTPException(status_code=404, detail="Artículo no encontrado")
+# @articulos_routers.delete(
+#     "/{id}",  # ?logico=false
+#     responses=NOT_FOUND_RESPONSE,  # DOCUMENTACION
+#     response_model=ArticuloSchema,  # VALIDACION DATOS DE SALIDA
+# )
+# async def borrar_articulo(
+#     id: Annotated[int, Path(gt=0)],
+#     logico: Annotated[bool, Query(description="Mantener registro?")] = False,
+#     # ^^ los tipos de estos parámetros pueden ser modularizados, ¿no?
+# ) -> ArticuloSchema:
+#     for articulo in articulos:
+#         if articulo["id"] == id:
+#             if logico:
+#                 articulo["activo"] = (False,)
+#             else:
+#                 articulos.remove(articulo)
+#             return articulo
+#     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
 @articulos_routers.put(
@@ -83,11 +97,39 @@ async def editar_articulo(
     id: Annotated[int, Path(gt=0, description="Id del producto. >0")],
     # ^^ El tipo puede ser modularizado, no?
     articulo_editar: ArticuloUpdateSchema,
+    db: Session = Depends(get_db),
 ):
-    for articulo in articulos:
-        if articulo["id"] == id:
-            articulo["nombre"] = articulo_editar.nombre
-            articulo["precio"] = articulo_editar.precio
-            articulo["activo"] = articulo_editar.activo
-            return articulo
-    raise HTTPException(status_code=404, detail="Articulo no encontrado")
+
+    arti_obtenido = db.get(Articulo, id)
+    if arti_obtenido is not None:
+        arti_obtenido.nombre = articulo_editar.nombre
+        arti_obtenido.precio = articulo_editar.precio
+        arti_obtenido.activo = articulo_editar.activo
+        db.commit()
+        db.refresh(arti_obtenido)
+        return arti_obtenido
+        
+    raise HTTPException(status_code=404, detail="Artículo no encontrado")
+
+
+
+@articulos_routers.patch(
+    "/{id}", responses=NOT_FOUND_RESPONSE, response_model=ArticuloSchema
+)
+async def editar_articulo(
+    id: Annotated[int, Path(gt=0, description="Id del producto. >0")],
+    # ^^ El tipo puede ser modularizado, no?
+    articulo_editar: ArticuloUpdateSchema,
+    db: Session = Depends(get_db),
+):
+
+    arti_obtenido = db.get(Articulo, id)
+    if arti_obtenido is not None:
+        arti_obtenido.nombre = articulo_editar.nombre
+        arti_obtenido.precio = articulo_editar.precio
+        arti_obtenido.activo = articulo_editar.activo
+        db.commit()
+        db.refresh(arti_obtenido)
+        return arti_obtenido
+        
+    raise HTTPException(status_code=404, detail="Artículo no encontrado")
