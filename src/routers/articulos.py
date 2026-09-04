@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, Query, Depends
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
-from database import get_db
 
+from database import get_db
 from models.articulos import Articulo
 from schemas.articulos import ArticuloSchema, ArticuloUpdateSchema
 
@@ -28,6 +28,7 @@ NOT_FOUND_RESPONSE = {
 # get all articulos
 @articulos_routers.get("/", response_model=list[ArticuloSchema])
 async def get_articulos(db: Session = Depends(get_db)):  # Inyección de Dependencias
+    # EN SQL SERÍA: SELECT * FROM articulos
     articulos = db.query(Articulo).all()
     return articulos
 
@@ -39,12 +40,11 @@ async def get_articulos(db: Session = Depends(get_db)):  # Inyección de Depende
     response_model=ArticuloSchema,
 )
 async def get_articulos_by_id(
-    id: Annotated[int, Path(gt=0)],
-    db: Session = Depends(get_db)
+    id: Annotated[int, Path(gt=0)], db: Session = Depends(get_db)
 ):
 
-    #arti_obtenido = db.query(Articulo).filter(Articulo.id == id).first()
-    #SELECT * FROM articulos WHERE arti_id = 6
+    # arti_obtenido = db.query(Articulo).filter(Articulo.id == id).first()
+    # SELECT * FROM articulos WHERE arti_id = 6
 
     arti_obtenido = db.get(Articulo, id)
     if arti_obtenido is not None:
@@ -52,42 +52,23 @@ async def get_articulos_by_id(
     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
-@articulos_routers.post(
-    "/", response_model=ArticuloSchema
-)  # VALIDO EL DATO DE SALIDA
-async def crear_articulo(articulo_nuevo: ArticuloSchema, db: Session = Depends(get_db) ):  # VALIDO EL DATO DE ENTRADA
+@articulos_routers.post("/", response_model=ArticuloSchema)  # VALIDO EL DATO DE SALIDA
+async def crear_articulo(
+    articulo_nuevo: ArticuloSchema, db: Session = Depends(get_db)
+):  # VALIDO EL DATO DE ENTRADA
 
-    articulo_db = Articulo( # <- MODELO
-        nombre= articulo_nuevo.nombre,
-        precio = articulo_nuevo.precio,
-        activo = articulo_nuevo.activo,
+    articulo_db = Articulo(  # <- MODELO
+        nombre=articulo_nuevo.nombre,
+        precio=articulo_nuevo.precio,
+        activo=articulo_nuevo.activo,
     )
+    # Un objeto de un Model, equivale a un registro en una Tabla
     db.add(articulo_db)
+    # persistimos en la db con commit
     db.commit()
+    # refrescamos UNA INSTANCIA (objeto)
     db.refresh(articulo_db)
-
-    #persistir en la db
     return articulo_db
-
-
-# @articulos_routers.delete(
-#     "/{id}",  # ?logico=false
-#     responses=NOT_FOUND_RESPONSE,  # DOCUMENTACION
-#     response_model=ArticuloSchema,  # VALIDACION DATOS DE SALIDA
-# )
-# async def borrar_articulo(
-#     id: Annotated[int, Path(gt=0)],
-#     logico: Annotated[bool, Query(description="Mantener registro?")] = False,
-#     # ^^ los tipos de estos parámetros pueden ser modularizados, ¿no?
-# ) -> ArticuloSchema:
-#     for articulo in articulos:
-#         if articulo["id"] == id:
-#             if logico:
-#                 articulo["activo"] = (False,)
-#             else:
-#                 articulos.remove(articulo)
-#             return articulo
-#     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
 @articulos_routers.put(
@@ -108,28 +89,27 @@ async def editar_articulo(
         db.commit()
         db.refresh(arti_obtenido)
         return arti_obtenido
-        
+
     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
-
-@articulos_routers.patch(
-    "/{id}", responses=NOT_FOUND_RESPONSE, response_model=ArticuloSchema
+@articulos_routers.delete(
+    "/{id}",  # ?logico=false
+    responses=NOT_FOUND_RESPONSE,  # DOCUMENTACION
+    response_model=list[ArticuloSchema],  # VALIDACION DATOS DE SALIDA
 )
-async def editar_articulo(
-    id: Annotated[int, Path(gt=0, description="Id del producto. >0")],
-    # ^^ El tipo puede ser modularizado, no?
-    articulo_editar: ArticuloUpdateSchema,
-    db: Session = Depends(get_db),
-):
+async def borrar_articulo(
+    id: Annotated[int, Path(gt=0)],
+    db: Annotated[Session, Depends(get_db)],
+    logico: Annotated[bool, Query(description="Mantener registro?")] = False,
+) -> ArticuloSchema:
 
     arti_obtenido = db.get(Articulo, id)
     if arti_obtenido is not None:
-        arti_obtenido.nombre = articulo_editar.nombre
-        arti_obtenido.precio = articulo_editar.precio
-        arti_obtenido.activo = articulo_editar.activo
-        db.commit()
-        db.refresh(arti_obtenido)
-        return arti_obtenido
-        
+        if logico:
+            arti_obtenido.activo = False
+        else:
+            db.delete(arti_obtenido)
+            db.commit()
+        return db.query(Articulo).all()
     raise HTTPException(status_code=404, detail="Artículo no encontrado")

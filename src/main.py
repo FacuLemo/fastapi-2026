@@ -1,13 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from models.articulos import Articulo #IMPORTANTE para que se cree la tabla, aunque no se use en código
+
 from database import Base, engine
+from models.articulos import (
+    Articulo,  # IMPORTANTE para que se cree la tabla, aunque no se use en código  # noqa: F401
+)
 from routers.articulos import articulos_routers
 from routers.saludar import saludar_routers
 
 # Crea las tablas y la db
 Base.metadata.create_all(bind=engine)
 
+# REPASO MITAD DE AÑO:
 # Fastapi -> Framework para hacer APIs
 # Framework -> marco de trabajo -> herramientas y formas de trabajar para cumplir un próposito
 # instalamos creando un entorno virtual: python3 -m venv venv
@@ -84,6 +88,7 @@ app.add_middleware(
 
 
 """
+cosas viejas:
 
 # Parámetro query-> /articulos?clave=valor&llave=valor
 
