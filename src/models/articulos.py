@@ -1,22 +1,29 @@
 # MODELO:
 # Clases que representan TABLAS real en la DB
 # controladas por SQLAlchemy (Base o Declarative Base)
-from database import Base
-from sqlalchemy import Boolean, Column, Integer, String
 
+#Ahora usamos SQLModel, que por detrás funciona con sqlalchemy.
+from sqlmodel import SQLModel, Field
 
-class Articulo(Base):
-    __tablename__ = "articulos"
+# VIEJO, CON SQLALCHEMY:
+# class Articulo(Base): #model == tabla
+#     __tablename__ = "articulos"
 
-    id = Column(Integer, primary_key=True)
-    nombre = Column(String)
-    precio = Column(Integer)
-    activo = Column(Boolean)
+#     id = Column(Integer, primary_key=True)
+#     nombre = Column(String)
+#     stock = Column(Integer)
+#     precio = Column(Integer)
+#     activo = Column(Boolean)
 
+#AHORA, con slqmodel:
+class ArticuloBase(SQLModel): # parecido a ArticuloCreateUpdate
+    nombre: str 
+    stock:int 
+    precio:int 
+    activo:bool 
 
-# usamos de referencia el schema:
-# class ArticuloSchema(BaseModel):
-    # id: Annotated[int, Field(gt=0, description="ID del articulo")]
-    # nombre: StrCortito
-    # precio: IntPrecioVenta = 1500
-    # activo: BoolActivo = True
+class Articulo(ArticuloBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+
+class ArticuloPublic(ArticuloBase):
+    id: int
