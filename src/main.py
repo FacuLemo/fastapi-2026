@@ -1,16 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel #Ya no traemos Base sino que tramos SQLModel
 
-from database import engine
-from models.articulos import (
-    Articulo,  # IMPORTANTE para que se cree la tabla, aunque no se use en código  # noqa: F401
-)
 from routers.articulos import articulos_routers
 from routers.saludar import saludar_routers
-
-# Crea las tablas y la db
-SQLModel.metadata.create_all(bind=engine)
 
 # REPASO MITAD DE AÑO:
 # Fastapi -> Framework para hacer APIs

@@ -1,12 +1,14 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
-#Ahora que usamos sqlmodel no traemos nada de sqlalchemy.
+
+# Ahora que usamos sqlmodel no traemos nada de sqlalchemy.
 from sqlmodel import Session, select
 
 from database import get_db
-#Y también nuestros schemas son los models. (fíjense los response_model)
-from models.articulos import Articulo, ArticuloPublic, ArticuloBase
+
+# Y también nuestros schemas son los models. (fíjense los response_model)
+from models.articulos import Articulo, ArticuloBase, ArticuloPublic
 
 articulos_routers = APIRouter()
 
@@ -59,7 +61,7 @@ async def crear_articulo(
     articulo_nuevo: ArticuloBase, db: Session = Depends(get_db)
 ):  # VALIDO EL DATO DE ENTRADA
 
-    #Ya no instancio ningún Objeto, sino que hago model_validate
+    # Ya no instancio ningún Objeto, sino que hago model_validate
     articulo_db = Articulo.model_validate(articulo_nuevo)
     db.add(articulo_db)
     # persistimos en la db con commit
@@ -80,10 +82,12 @@ async def editar_articulo(
 ):
 
     arti_obtenido = db.get(Articulo, id)
+
     if arti_obtenido is not None:
         arti_obtenido.nombre = articulo_editar.nombre
         arti_obtenido.precio = articulo_editar.precio
         arti_obtenido.activo = articulo_editar.activo
+        arti_obtenido.proveedor = articulo_editar.proveedor
         db.commit()
         db.refresh(arti_obtenido)
         return arti_obtenido
