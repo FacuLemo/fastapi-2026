@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlmodel import Session, select
 
 from database import get_db
+from models.anidados import ArticuloNested
 
 # Y también nuestros schemas son los models. (fíjense los response_model)
 from models.articulos import Articulo, ArticuloBase, ArticuloPublic
@@ -41,7 +42,7 @@ async def get_articulos(db: Session = Depends(get_db)):  # Inyección de Depende
 @articulos_routers.get(
     "/{id}",  # Parámetro de ruta (esta en la url)
     responses=NOT_FOUND_RESPONSE,
-    response_model=ArticuloPublic,
+    response_model=ArticuloNested,
 )
 async def get_articulos_by_id(
     id: Annotated[int, Path(gt=0)], db: Session = Depends(get_db)
@@ -56,7 +57,7 @@ async def get_articulos_by_id(
     raise HTTPException(status_code=404, detail="Artículo no encontrado")
 
 
-@articulos_routers.post("/", response_model=ArticuloPublic)  # VALIDO EL DATO DE SALIDA
+@articulos_routers.post("/", response_model=ArticuloNested)  # VALIDO EL DATO DE SALIDA
 async def crear_articulo(
     articulo_nuevo: ArticuloBase, db: Session = Depends(get_db)
 ):  # VALIDO EL DATO DE ENTRADA
@@ -87,7 +88,7 @@ async def editar_articulo(
         arti_obtenido.nombre = articulo_editar.nombre
         arti_obtenido.precio = articulo_editar.precio
         arti_obtenido.activo = articulo_editar.activo
-        arti_obtenido.proveedor = articulo_editar.proveedor
+        arti_obtenido.proveedor_id = articulo_editar.proveedor_id
         db.commit()
         db.refresh(arti_obtenido)
         return arti_obtenido

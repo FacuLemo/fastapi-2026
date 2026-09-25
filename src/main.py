@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers.articulos import articulos_routers
 from routers.saludar import saludar_routers
+from routers.proveedor import proveedor_routers
 
 # REPASO MITAD DE AÑO:
 # Fastapi -> Framework para hacer APIs
@@ -60,6 +61,7 @@ app.title = "Mi primera API"  # Así cambia el nombre en /docs
 # Inclumos los routers (path operations)
 
 app.include_router(articulos_routers, tags=["Artículos"], prefix="/articulos")
+app.include_router(proveedor_routers, tags=["Proveedor"],prefix="/proveedor")
 app.include_router(saludar_routers, tags=["Saludos"])
 
 # ^ Tags agrupa en la documentación
