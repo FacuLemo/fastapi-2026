@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 
 from routers.articulos import articulos_routers
-#from routers.auth import auth_routers
+from routers.auth import auth_routers
 from routers.proveedor import proveedor_routers
 from routers.saludar import saludar_routers
 
@@ -16,7 +16,7 @@ app.title = "Mi primera API"  # Así cambia el nombre en /docs
 app.include_router(articulos_routers, tags=["Artículos"], prefix="/articulos")
 app.include_router(proveedor_routers, tags=["Proveedor"], prefix="/proveedor")
 app.include_router(saludar_routers, tags=["Saludos"])
-#app.include_router(auth_routers, tags=["Autenticación"], prefix="/auth")
+app.include_router(auth_routers, tags=["Autenticación"], prefix="/auth")
 # ^ Tags agrupa en la documentación
 # ^ Prefix le pone prefijos a las urls de cada path operation definido en ese router
 

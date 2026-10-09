@@ -6,6 +6,7 @@ from sqlmodel import SQLModel
 from alembic import context
 from src.models.articulos import Articulo
 from src.models.proveedor import Proveedor
+from src.models.usuarios import Usuario
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

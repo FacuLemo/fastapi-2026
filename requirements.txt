@@ -2,6 +2,7 @@ alembic==1.20.0
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.13.0
+bcrypt==5.0.0
 certifi==2026.2.25
 click==8.3.1
 dnspython==2.8.0
@@ -22,11 +23,13 @@ Mako==1.4.1
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
-pydantic==2.12.5
+opentelemetry-api==1.45.0
+pydantic==2.13.5
 pydantic-extra-types==2.11.1
 pydantic-settings==2.13.1
-pydantic_core==2.41.5
+pydantic_core==2.46.5
 Pygments==2.19.2
+PyJWT==2.15.1
 python-dotenv==1.2.2
 python-multipart==0.0.22
 PyYAML==6.0.3
