@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi_pagination import Page, paginate
 
 # Ahora que usamos sqlmodel no traemos nada de sqlalchemy.
 from sqlmodel import Session, select
@@ -30,12 +31,16 @@ NOT_FOUND_RESPONSE = {
 
 
 # get all articulos
-@articulos_routers.get("/", response_model=list[ArticuloPublic])
+@articulos_routers.get(
+    "/", response_model=Page[ArticuloPublic]
+)  # No es mas un list, es un Page
 async def get_articulos(db: Session = Depends(get_db)):  # Inyección de Dependencias
     # EN SQL SERÍA: SELECT * FROM articulos
     # CON SQLALCHEMY: articulos = db.query(Articulo).all() en sqlalchemy
     articulos = db.exec(select(Articulo)).all()  # en sqlmodel
-    return articulos
+    return paginate(
+        articulos
+    )  # Resultados paginados (No optimizados desde la db. Ver documentación.)
 
 
 # get by id

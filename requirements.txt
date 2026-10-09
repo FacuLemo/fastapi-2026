@@ -6,9 +6,10 @@ certifi==2026.2.25
 click==8.3.1
 dnspython==2.8.0
 email-validator==2.3.0
-fastapi==0.135.2
+fastapi==0.142.2
 fastapi-cli==0.0.24
 fastapi-cloud-cli==0.15.1
+fastapi-pagination==0.16.0
 fastar==0.9.0
 greenlet==3.5.5
 h11==0.16.0
