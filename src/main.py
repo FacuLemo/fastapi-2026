@@ -1,13 +1,43 @@
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 
+from alembic import command
 from routers.articulos import articulos_routers
 from routers.auth import auth_routers
 from routers.proveedor import proveedor_routers
 from routers.saludar import saludar_routers
 
-app = FastAPI()
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def run_migrations():
+    ini_path = BASE_DIR / "alembic.ini"
+    alembic_dir = BASE_DIR / "alembic"
+
+    # Verificación rápida en los logs para confirmar que se subieron los archivos
+    if not ini_path.exists():
+        raise FileNotFoundError(f"No se encontró alembic.ini en: {ini_path}")
+
+    alembic_cfg = Config(str(ini_path))
+
+    # Forzamos la ruta absoluta de la carpeta de migraciones
+    alembic_cfg.set_main_option("script_location", str(alembic_dir))
+
+    command.upgrade(alembic_cfg, "head")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    run_migrations()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.title = "Mi primera API"  # Así cambia el nombre en /docs
 

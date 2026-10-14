@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
-
 from core.auth import get_password_hash, verify_password
 from database import get_db
 from models.usuarios import Usuario, UsuarioCreate, UsuarioLogin, UsuarioPublic
